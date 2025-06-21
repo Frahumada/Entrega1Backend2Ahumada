@@ -2,22 +2,18 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
 import secure from '../middlewares/passportJWT.js';
+import { login, register } from '../controllers/authController.js';
+import UserDTO from '../dto/UserDTO.js';
 
 const router = Router();
 
 // Login
-router.post('/login', (req, res, next) => {
-  passport.authenticate('login', (err, user, info) => {
-    if (err) return next(err);
-    if (!user) return res.status(401).json(info);
-    const token = jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
-  })(req, res, next);
-});
+router.post('/login', login);
 
 // Current
 router.get('/current', secure, (req, res) => {
-  res.json({ user: req.user });
+  const safeUser = new UserDTO(req.user);
+  res.json({ user: safeUser });
 });
 
 export default router;
