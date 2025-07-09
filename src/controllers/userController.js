@@ -1,16 +1,18 @@
 import userRepository from '../repositories/UserRepository.js';
-import { createHash } from '../utils/hash.js';
 
 
 export const createUser = async (req, res) => {
   try {
-    const { email, password, ...rest } = req.body;
-    const newUser = await userRepository.registerUser({
-      ...rest,
-      email,
-      password: createHash(password)
-    });
-
+    if (!req.body.email || !req.body.password) {
+      return res.status(400).json({ message: 'Email y contraseña son requeridos' });
+    }
+    if (req.body.password.length < 6) {
+      return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    if (req.body.role && !['user'].includes(req.body.role)) {
+      return res.status(400).json({ message: 'Rol inválido. Debe ser user' });
+    }
+    const newUser = await userRepository.registerUser(req.body);
     res.status(201).json({ message: 'Usuario creado', user: newUser });
   } catch (error) {
     console.error('❌ Error al crear usuario:', error);

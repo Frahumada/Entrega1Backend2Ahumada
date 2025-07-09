@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { getUsers, getUserById, updateUser, deleteUser, createUser } from '../controllers/userController.js';
-
 import secure from '../middlewares/passportJWT.js';
 
 const router = Router();

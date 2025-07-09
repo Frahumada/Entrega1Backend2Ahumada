@@ -1,48 +1,76 @@
 import UserRepository from '../repositories/UserRepository.js';
-import { createHash, isValidPassword } from '../utils/hash.js';
+import { isValidPassword } from '../utils/hash.js';
+import UserDTO from '../dto/UserDTO.js';
 import jwt from 'jsonwebtoken';
 
 export const login = async (req, res) => {
+
   try {
+    //recibir email y password del body y validar que no esten vacios
     const { email, password } = req.body;
+
+    //paso email por UserRepository para buscar el usuario
     const user = await UserRepository.findUserByEmail(email);
 
-    if (!user || !isValidPassword(password, user.password)) {
+    //validar que el usuario exista
+    if (!user) {
+      console.log('❌ Usuario no encontrado');
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
-
+    //validar que la contraseña sea correcta pasndolo por isValidPassword de hash.js
+    const passwordValid = isValidPassword(password, user.password);
+    if (!passwordValid) {
+      console.log('❌ Contraseña incorrecta');
+      return res.status(401).json({ message: 'Credenciales inválidas' });
+}
+    // Generar token JWT pasando el id del usuario y su rol
     const token = jwt.sign(
-      { role: user.role },
+      { sub: user._id, role: user.role },
       process.env.JWT_SECRET,
-      {
-        expiresIn: '1h',
-        subject: user._id.toString()
-      }
+      { expiresIn: '1h' }
     );
 
-    res.json({ token });
-  } catch (err) {
-    console.error("❌ Error en login:", err);
-    res.status(500).json({ message: 'Error al iniciar sesión' });
+    // Devolver el token y los datos del usuario (sin la contraseña)
+    res.json({
+      token,
+      user: {
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        cart: user.cart,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en login:', error);
+    res.status(500).json({ message: 'Error en login' });
   }
 };
 
 export const register = async (req, res) => {
-  try {
-    const { email, password, ...rest } = req.body;
+  //recibir email, password y resto de datos del body
+  const { email, password, ...rest } = req.body;
 
-    const exists = await UserRepository.findUserByEmail(email);
-    if (exists) return res.status(409).json({ message: 'Usuario ya existe' });
+  //validar existencia de email
+  const exists = await UserRepository.findUserByEmail(email);
+  if (exists) return res.status(409).json({ message: 'Usuario ya existe' });
 
-    const newUser = await UserRepository.registerUser({
-      email,
-      password,
-      ...rest
-    });
+  //crear un nuevo usuario pasando el email, password y resto de datos por UserRepository.registerUser
+  const newUser = await UserRepository.registerUser({
+    ...rest,
+    email,
+    password,
+  });
+  //devolver un mensaje de éxito y el usuario creado
+  res.status(201).json({ message: 'Usuario registrado', user: newUser });
+};
 
-    res.status(201).json({ message: 'Usuario registrado', user: newUser });
-  } catch (err) {
-    console.error("❌ Error en register:", err);
-    res.status(500).json({ message: 'Error al registrar usuario' });
+export const getCurrent = (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'No autenticado' });
   }
+
+  const safeUser = new UserDTO(req.user);
+  res.json({ status: 'success', user: safeUser });
 };

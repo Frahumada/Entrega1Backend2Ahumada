@@ -2,7 +2,9 @@
 import User from '../models/User.js';
 
 export async function createUser(data) {
-  return await new User(data).save();
+  // recibo los datos del usuario y los guardo en la base de datos (ya se valido que no exista en el repostory)
+  const newUser = await new User(data).save();
+  return newUser;
 }
 
 export async function getUsers() {
@@ -10,7 +12,6 @@ export async function getUsers() {
 }
 
 export async function getUserByEmail(email) {
-  console.log('📨 Buscando email en DAO:', email);
   return User.findOne({ email });
 }
 
@@ -19,7 +20,8 @@ export async function getUserById(id) {
 }
 
 export async function updateUser(id, data) {
-  return User.findByIdAndUpdate(id, data);
+  // Actualizo el usuario por su ID y devuelvo el usuario actualizado
+  return User.findByIdAndUpdate(id, data,{ new: true });
 }
 
 export async function deleteUser(id) {

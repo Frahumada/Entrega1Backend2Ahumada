@@ -12,14 +12,4 @@ const schema = new mongoose.Schema({
   role:       { type: String, default: 'user' }
 });
 
-schema.pre('save', function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = bcrypt.hashSync(this.password, 10);
-  next();
-});
-
-schema.methods.isValidPassword = function(pw) {
-  return bcrypt.compareSync(pw, this.password);
-};
-
 export default mongoose.model('User', schema);

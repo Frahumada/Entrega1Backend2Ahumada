@@ -10,7 +10,6 @@ const opts = {
 passport.use(
   'jwt',
   new JwtStrategy(opts, async (payload, done) => {
-    console.log('🔍 JWT payload recibido:', payload);
     try {
       const user = await User.findById(payload.sub).select('-password');
       if (!user) return done(null, false);
